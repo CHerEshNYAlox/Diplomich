@@ -1,0 +1,50 @@
+﻿@model DocSystemWeb.Models.UserModel
+
+@{
+    ViewData["Title"] = "Редактирование сотрудника";
+}
+
+<div class="container mt-5 fade-in-content">
+    <div class="card glass-panel p-5 mx-auto shadow-sm" style="max-width: 600px;">
+        <h3 class="mb-4 fw-bold">Редактирование: @Model.FullName</h3>
+
+        <form asp-action="EditUser" method="post">
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Логин (для входа)</label>
+                <input asp-for="Login" class="form-control" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">ФИО сотрудника</label>
+                <input asp-for="FullName" class="form-control" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Должность</label>
+                <input asp-for="Position" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Уровень прав (Роль)</label>
+                <select asp-for="Role" class="form-select">
+                    <option value="User">Пользователь</option>
+                    <option value="Manager">Руководитель</option>
+                    <option value="Admin">Администратор</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-muted">Новый пароль</label>
+                <input type="text" name="newPassword" class="form-control" placeholder="Оставьте пустым, если не хотите менять" />
+                <small class="text-muted d-block mt-1">Заполняйте только при необходимости сброса пароля.</small>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a asp-action="UsersList" class="btn btn-secondary shadow-sm rounded-pill px-4">Отмена</a>
+                <button type="submit" class="btn btn-primary shadow-sm rounded-pill px-4">Сохранить изменения</button>
+            </div>
+        </form>
+    </div>
+</div>

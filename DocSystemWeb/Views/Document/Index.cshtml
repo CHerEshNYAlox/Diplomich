@@ -1,0 +1,437 @@
+﻿@model List<DocSystemWeb.Models.DocumentModel>
+@{
+    ViewData["Title"] = "Реестр документов";
+}
+
+<style>
+    /* Стили для цветных карточек статистики с эффектом подпрыгивания */
+    .stat-card {
+        border-radius: 1rem;
+        border: none;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
+            z-index: 10;
+        }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+        color: white;
+    }
+
+    .bg-gradient-secondary {
+        background: linear-gradient(135deg, #858796 0%, #60616f 100%);
+        color: white;
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+        color: white;
+    }
+</style>
+
+<div class="row mt-3 mb-4 fade-in-content">
+    <div class="col-md-3">
+        <div class="card stat-card bg-gradient-primary shadow-sm py-2">
+            <div class="card-body h5 mb-0 fw-bold d-flex justify-content-between align-items-center">
+                <span>Доступно:</span> <span>@ViewBag.TotalDocs</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-gradient-success shadow-sm py-2">
+            <div class="card-body h5 mb-0 fw-bold d-flex justify-content-between align-items-center">
+                <span>Утверждено:</span> <span>@ViewBag.ApprovedDocs</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-gradient-secondary shadow-sm py-2">
+            <div class="card-body h5 mb-0 fw-bold d-flex justify-content-between align-items-center">
+                <span>Черновики:</span> <span>@ViewBag.DraftDocs</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-gradient-info shadow-sm py-2">
+            <div class="card-body h5 mb-0 fw-bold d-flex justify-content-between align-items-center">
+                <span>Мои:</span> <span>@ViewBag.MyDocs</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3 fade-in-content">
+    <h2 class="fw-bold mb-0" style="letter-spacing: -0.5px;">Реестр документов</h2>
+    <button class="btn btn-primary shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addDocModal">
+        + Создать документ
+    </button>
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 mb-4 p-3 glass-panel align-items-end fade-in-content">
+    <div class="col-md-4">
+        <label class="form-label fw-semibold small mb-1">Поиск</label>
+        <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Название..." />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label fw-semibold small mb-1">Категория</label>
+        <select name="searchCategory" class="form-select">
+            <option value="">Все</option>
+            <option value="Приказ" selected="@(ViewBag.SearchCategory == "Приказ")">Приказ</option>
+            <option value="Отчет" selected="@(ViewBag.SearchCategory == "Отчет")">Отчет</option>
+            <option value="Договор" selected="@(ViewBag.SearchCategory == "Договор")">Договор</option>
+            <option value="Справка" selected="@(ViewBag.SearchCategory == "Справка")">Справка</option>
+            <option value="Инструкция" selected="@(ViewBag.SearchCategory == "Инструкция")">Инструкция</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label fw-semibold small mb-1">Статус</label>
+        <select name="searchStatus" class="form-select">
+            <option value="">Все</option>
+            <option value="Черновик" selected="@(ViewBag.SearchStatus == "Черновик")">Черновик</option>
+            <option value="На согласовании" selected="@(ViewBag.SearchStatus == "На согласовании")">На согласовании</option>
+            <option value="Утверждено" selected="@(ViewBag.SearchStatus == "Утверждено")">Утверждено</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100 shadow-sm">Искать</button>
+    </div>
+</form>
+
+<div class="card glass-panel p-4 fade-in-content">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 border-0">
+            <thead>
+                <tr>
+                    <th style="width: 35%;" class="border-bottom-0 text-muted">Название и описание</th>
+                    <th style="width: 15%;" class="border-bottom-0 text-muted">Категория</th>
+                    <th style="width: 15%;" class="border-bottom-0 text-muted">Статус</th>
+                    <th style="width: 10%;" class="border-bottom-0 text-muted">Версия</th>
+                    <th style="width: 10%;" class="border-bottom-0 text-muted">Файл</th>
+                    <th style="width: 15%;" class="border-bottom-0 text-muted text-end">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var doc in Model)
+                {
+                    <tr>
+                        <td class="align-top">
+                            <strong class="d-block mb-1" style="font-size: 1.1rem;">@doc.Title</strong>
+
+                            @if (!string.IsNullOrEmpty(doc.Description))
+                            {
+                                <div class="description-container mb-2">
+                                    <div class="description-text collapsed-text text-muted" style="font-size: 0.9rem; line-height: 1.4;">
+                                        @doc.Description
+                                    </div>
+                                    @if (doc.Description.Length > 80)
+                                    {
+                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2 mt-1 shadow-sm toggle-description-btn" style="font-size: 0.75rem;">
+                                            Развернуть ↓
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            <div style="font-size: 0.8rem; color: #adb5bd;">
+                                <span class="fw-semibold">Автор:</span> @doc.OwnerName
+                            </div>
+                        </td>
+                        <td class="align-top"><span class="badge bg-light text-dark border mt-1">@doc.Category</span></td>
+                        <td class="align-top">
+                            <span class="badge mt-1 bg-@(doc.Status == "Утверждено" ? "success" : doc.Status == "На согласовании" ? "warning text-dark" : "secondary")">
+                                @doc.Status
+                            </span>
+                        </td>
+                        <td class="align-top"><span class="badge bg-dark rounded-pill mt-1">v @doc.Version</span></td>
+                        <td class="align-top">
+                            @if (!string.IsNullOrEmpty(doc.FileName))
+                            {
+                                <button class="btn btn-outline-info btn-sm rounded-pill px-3 shadow-sm mt-1" data-bs-toggle="modal" data-bs-target="#previewModal-@doc.Id">Просмотр</button>
+                            }
+                        </td>
+                        <td class="text-end align-top">
+                            @if (User.IsInRole("Admin") || doc.OwnerId == User.Identity.Name)
+                            {
+                                <div class="d-flex flex-column align-items-end mt-1">
+                                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#editModal-@doc.Id">Изменить</button>
+                                    <a asp-action="DeleteDocument" asp-route-id="@doc.Id" class="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm" onclick="return confirm('Удалить документ со всеми версиями?')">Удалить</a>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (User.IsInRole("Admin") && ViewBag.AuditLogs != null)
+{
+    <div class="mt-5 pt-4 fade-in-content">
+        <h4 class="text-danger fw-bold mb-3 d-flex align-items-center">
+            <span class="me-2">🛡️</span> Журнал безопасности
+        </h4>
+        <div style="max-height: 400px; overflow-y: auto;" class="glass-panel p-2">
+            <table class="table table-sm table-hover mb-0 bg-transparent">
+                <thead style="position: sticky; top: 0; background-color: var(--glass-bg-light); z-index: 1;">
+                    <tr>
+                        <th class="text-muted">Время (UTC)</th>
+                        <th class="text-muted">Пользователь</th>
+                        <th class="text-muted">Действие</th>
+                        <th class="text-muted">Подробности</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in ViewBag.AuditLogs)
+                    {
+                        <tr>
+                            <td>@log.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                            <td class="fw-bold">@log.UserName</td>
+                            <td>
+                                <span class="badge bg-@(log.Action == "Удаление" || log.Action == "Удаление версии" ? "danger" : log.Action == "Редактирование" ? "warning text-dark" : "success")">
+                                    @log.Action
+                                </span>
+                            </td>
+                            <td class="small text-muted">@log.Details</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="addDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content glass-panel">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">Новый документ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="AddDocument" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="fw-bold mb-1">Название:</label>
+                        <input type="text" name="Title" class="form-control" required maxlength="30" pattern=".*[а-яА-ЯёЁ].*" title="Не длиннее 30 символов, обязательны русские буквы." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold mb-1">Описание документа:</label>
+                        <textarea name="Description" class="form-control" rows="2" placeholder="Введите краткое описание содержания..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold text-primary mb-1">Доступ (логины через запятую):</label>
+                        <input type="text" name="SharedWithLogins" class="form-control" placeholder="Например: ivanov, petrov (пусто = приватный)" />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="fw-bold mb-1">Категория:</label>
+                            <select name="Category" class="form-select">
+                                <option value="Приказ">Приказ</option>
+                                <option value="Отчет">Отчет</option>
+                                <option value="Договор">Договор</option>
+                                <option value="Справка">Справка</option>
+                                <option value="Инструкция">Инструкция</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="fw-bold mb-1">Статус:</label>
+                            <select name="Status" class="form-select">
+                                <option value="Черновик">Черновик</option>
+                                <option value="На согласовании">На согласовании</option>
+                                <option value="Утверждено">Утверждено</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold mb-1">Файл:</label>
+                        <input type="file" name="UploadedFile" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@foreach (var doc in Model)
+{
+    @if (!string.IsNullOrEmpty(doc.FileName))
+    {
+        <div class="modal fade preview-modal" id="previewModal-@doc.Id" tabindex="-1" aria-hidden="true" data-file-url="@Url.Content("~/uploads/" + doc.FileName)">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content glass-panel">
+                    <div class="modal-header border-bottom-0">
+                        <h5 class="modal-title fw-bold">Просмотр: @doc.Title</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center p-0 position-relative" style="height: 70vh;">
+                        <iframe class="preview-frame w-100 m-0 border-0" style="height: 100%; display: none;"></iframe>
+                        <div class="no-preview-message d-none flex-column justify-content-center align-items-center h-100 p-4">
+                            <span class="mb-3" style="font-size: 4rem;">📄</span>
+                            <h4 class="fw-bold text-muted">Предварительный просмотр недоступен</h4>
+                            <p class="text-muted">Для этого формата файла предпросмотр в браузере не поддерживается. Пожалуйста, используйте кнопку ниже для скачивания файла на ваш компьютер.</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0">
+                        <a href="~/uploads/@doc.FileName" download class="btn btn-success shadow-sm rounded-pill px-4">Скачать оригинал</a>
+                        <button type="button" class="btn btn-secondary shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (User.IsInRole("Admin") || doc.OwnerId == User.Identity.Name)
+    {
+        <div class="modal fade" id="editModal-@doc.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content glass-panel">
+                    <div class="modal-header border-bottom-0">
+                        <h5 class="modal-title fw-bold">Редактирование: @doc.Title</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form asp-action="EditDocument" method="post" enctype="multipart/form-data">
+                        <div class="modal-body">
+                            <input type="hidden" name="Id" value="@doc.Id" />
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="fw-bold mb-1">Название:</label>
+                                    <input type="text" name="Title" value="@doc.Title" class="form-control" required maxlength="30" pattern=".*[а-яА-ЯёЁ].*" title="Не длиннее 30 символов, обязательны русские буквы." />
+                                </div>
+                                <div class="col-12">
+                                    <label class="fw-bold mb-1">Описание документа:</label>
+                                    <textarea name="Description" class="form-control" rows="2">@doc.Description</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="fw-bold text-primary mb-1">Доступ (логины через запятую):</label>
+                                    <input type="text" name="SharedWithLogins" value="@doc.SharedWithLogins" class="form-control" placeholder="Например: ivanov, petrov" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-bold mb-1">Категория:</label>
+                                    <select name="Category" class="form-select">
+                                        <option value="Приказ" selected="@(doc.Category == "Приказ")">Приказ</option>
+                                        <option value="Отчет" selected="@(doc.Category == "Отчет")">Отчет</option>
+                                        <option value="Договор" selected="@(doc.Category == "Договор")">Договор</option>
+                                        <option value="Справка" selected="@(doc.Category == "Справка")">Справка</option>
+                                        <option value="Инструкция" selected="@(doc.Category == "Инструкция")">Инструкция</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="fw-bold mb-1">Статус:</label>
+                                    <select name="Status" class="form-select">
+                                        <option value="Черновик" selected="@(doc.Status == "Черновик")">Черновик</option>
+                                        <option value="На согласовании" selected="@(doc.Status == "На согласовании")">На согласовании</option>
+                                        <option value="Утверждено" selected="@(doc.Status == "Утверждено")">Утверждено</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 mt-4">
+                                    <div class="p-3 border rounded" style="background-color: rgba(255,255,255,0.05);">
+                                        <label class="fw-bold text-danger mb-2">Загрузить новую версию файла (v @(doc.Version + 1)):</label>
+                                        <input type="file" name="UploadedFile" class="form-control mb-1" />
+                                        <small class="text-muted">Предыдущий файл сохранится в архиве.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (doc.VersionHistory != null && doc.VersionHistory.Any())
+                            {
+                                <div class="mt-4 border-top pt-3">
+                                    <h6 class="fw-bold text-muted mb-3">Архив прошлых версий:</h6>
+                                    <ul class="list-group list-group-flush">
+                                        @foreach (var hist in doc.VersionHistory)
+                                        {
+                                            var parts = hist.Split('|');
+                                            if (parts.Length == 3)
+                                            {
+                                                <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                                                    <span><span class="badge bg-secondary me-2">@parts[0]</span> @parts[2]</span>
+                                                    <div>
+                                                        <a href="~/uploads/@parts[1]" download class="btn btn-sm btn-outline-primary rounded-pill">Скачать</a>
+                                                        @if (User.IsInRole("Admin"))
+                                                        {
+                                                            <button type="submit" asp-action="DeleteVersion" asp-route-id="@doc.Id" asp-route-versionData="@hist" class="btn btn-sm btn-outline-danger rounded-pill ms-1" formmethod="post" onclick="return confirm('Удалить эту версию навсегда?');">Удалить</button>
+                                                        }
+                                                    </div>
+                                                </li>
+                                            }
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+                        <div class="modal-footer border-top-0">
+                            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleButtons = document.querySelectorAll('.toggle-description-btn');
+
+            toggleButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const textBlock = this.previousElementSibling;
+
+                    if (textBlock.classList.contains('collapsed-text')) {
+                        textBlock.classList.remove('collapsed-text');
+                        this.innerText = 'Свернуть ↑';
+                        this.classList.replace('btn-outline-secondary', 'btn-outline-primary');
+                    } else {
+                        textBlock.classList.add('collapsed-text');
+                        this.innerText = 'Развернуть ↓';
+                        this.classList.replace('btn-outline-primary', 'btn-outline-secondary');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.preview-modal').forEach(function(modal) {
+                modal.addEventListener('show.bs.modal', function () {
+                    let iframe = modal.querySelector('.preview-frame');
+                    let noPreviewMsg = modal.querySelector('.no-preview-message');
+                    let fileUrl = modal.getAttribute('data-file-url');
+
+                    let extension = fileUrl.split('.').pop().toLowerCase();
+                    let viewableExtensions = ['pdf', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+
+                    if (viewableExtensions.includes(extension)) {
+                        iframe.setAttribute('src', fileUrl);
+                        iframe.style.display = 'block';
+
+                        noPreviewMsg.classList.add('d-none');
+                        noPreviewMsg.classList.remove('d-flex');
+                    } else {
+                        iframe.style.display = 'none';
+
+                        noPreviewMsg.classList.remove('d-none');
+                        noPreviewMsg.classList.add('d-flex');
+                    }
+                });
+
+                modal.addEventListener('hidden.bs.modal', function () {
+                    let iframe = modal.querySelector('.preview-frame');
+                    if (iframe) {
+                        iframe.removeAttribute('src');
+                    }
+                });
+            });
+        });
+    </script>
+}
