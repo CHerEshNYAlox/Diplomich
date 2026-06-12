@@ -11,13 +11,13 @@
 <table class="table table-bordered table-hover bg-white shadow-sm align-middle">
     <thead class="table-dark">
         <tr>
-            <th>ФИО</th>
-            <th>Логин</th>
-            <th>Должность</th>
-            <th>Роль в системе</th>
+            <th class="text-center">ФИО</th>
+            <th class="text-center">Логин</th>
+            <th class="text-center">Должность</th>
+            <th class="text-center">Роль в системе</th>
             @if (User.IsInRole("Admin"))
             {
-                <th style="width: 120px;">Действия</th>
+                <th style="width: 150px;" class="text-center">Действия</th>
             }
         </tr>
     </thead>
@@ -25,25 +25,34 @@
         @foreach (var user in Model)
         {
             <tr>
-                <td class="fw-bold">@user.FullName</td>
-                <td>@user.Login</td>
-                <td>@user.Position</td>
-                <td>
+                <td class="text-center fw-bold">@user.FullName</td>
+                <td class="text-center">@user.Login</td>
+                <td class="text-center">@user.Position</td>
+                <td class="text-center">
                     <span class="badge bg-@(user.Role == "Admin" ? "danger" : user.Role == "Manager" ? "primary" : "secondary")">
                         @(user.Role == "Admin" ? "Администратор" : user.Role == "Manager" ? "Руководитель" : "Пользователь")
                     </span>
                 </td>
                 @if (User.IsInRole("Admin"))
                 {
-                    <td>
-                        @if (user.Login != User.Identity.Name)
-                        {
-                            <a asp-action="DeleteUser" asp-route-id="@user.Id" class="btn btn-danger btn-sm w-100" onclick="return confirm('Удалить пользователя?')">Удалить</a>
+                    <td class="text-center">
+                        <div class="d-flex flex-column align-items-center mt-1">
 
-                            <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm">
-                                Изменить
-                            </a>
-                        }
+                            @if (user.Role == "Admin" && !User.IsInRole("Admin"))
+                            {
+                                <span class="text-muted small">Нет доступа</span>
+                            }
+                            else
+                            {
+                                <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-outline-primary btn-unified rounded-pill shadow-sm mb-2">Изменить</a>
+                            }
+
+                            @if (user.Login != User.Identity.Name)
+                            {
+                                <a asp-action="DeleteUser" asp-route-id="@user.Id" class="btn btn-outline-danger btn-unified rounded-pill shadow-sm" onclick="return confirm('Удалить пользователя?')">Удалить</a>
+                            }
+
+                        </div>
                     </td>
                 }
             </tr>

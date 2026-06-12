@@ -44,7 +44,7 @@ namespace DocSystemWeb.Controllers
             var docs = new List<DocumentModel>();
 
             bool isAdmin = User.IsInRole("Admin");
-            bool isManager = User.IsInRole("Manager");
+            bool isManager = User.IsInRole("Manager") || User.IsInRole("Руководитель");
             string currentUser = User.Identity.Name;
 
             foreach (var docSnap in snapshot.Documents)
@@ -98,9 +98,9 @@ namespace DocSystemWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> AddDocument(DocumentModel model)
         {
-            if (string.IsNullOrEmpty(model.Title) || model.Title.Length > 30 || !Regex.IsMatch(model.Title, @"[а-яА-ЯёЁ]"))
+            if (string.IsNullOrEmpty(model.Title) || model.Title.Length > 50 || !Regex.IsMatch(model.Title, @"[а-яА-ЯёЁ]"))
             {
-                TempData["ErrorNotification"] = "Ошибка добавления: Название должно содержать русские буквы и быть не длиннее 30 символов.";
+                TempData["ErrorNotification"] = "Ошибка добавления: Название должно содержать русские буквы и быть не длиннее 50 символов.";
                 return RedirectToAction("Index");
             }
 
@@ -147,8 +147,8 @@ namespace DocSystemWeb.Controllers
             if (!oldDocSnap.Exists) return RedirectToAction("Index");
             var oldDoc = oldDocSnap.ConvertTo<DocumentModel>();
 
-            // Проверка: Редактировать может только Админ или Владелец
-            if (!User.IsInRole("Admin") && oldDoc.OwnerId != User.Identity.Name)
+            // Проверка: Редактировать может Администратор, Руководитель (Manager) или Владелец
+            if (!User.IsInRole("Admin") && !User.IsInRole("Manager") && !User.IsInRole("Руководитель") && oldDoc.OwnerId != User.Identity.Name)
             {
                 TempData["ErrorNotification"] = "У вас нет прав на редактирование этого документа.";
                 return RedirectToAction("Index");
@@ -271,5 +271,6 @@ namespace DocSystemWeb.Controllers
             }
             return RedirectToAction("Index");
         }
+
     }
 }

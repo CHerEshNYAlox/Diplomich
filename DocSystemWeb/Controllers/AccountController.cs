@@ -38,7 +38,6 @@ namespace DocSystemWeb.Controllers
                 var adminUser = new UserModel
                 {
                     Login = "admin",
-                    // Код сам сгенерирует корректный хэш для пароля "admin"
                     Password = _passwordHasher.HashPassword(null, "admin"),
                     Role = "Admin",
                     FullName = "Иван Иванов",
@@ -62,7 +61,6 @@ namespace DocSystemWeb.Controllers
                 var userDoc = snapshot.Documents[0];
                 var user = userDoc.ConvertTo<UserModel>();
 
-                // Расшифровываем соль и проверяем хэш из поля Password
                 var result = _passwordHasher.VerifyHashedPassword(null, user.Password, password);
 
                 if (result == PasswordVerificationResult.Success)
@@ -130,7 +128,6 @@ namespace DocSystemWeb.Controllers
                 return RedirectToAction("UsersList");
             }
 
-            // Хэшируем пароль нового пользователя в поле Password перед отправкой в базу
             model.Password = _passwordHasher.HashPassword(null, Password);
 
             await usersRef.AddAsync(model);
@@ -143,6 +140,19 @@ namespace DocSystemWeb.Controllers
         public async Task<IActionResult> DeleteUser(string id)
         {
             DocumentReference docRef = _db.Collection("Users").Document(id);
+            DocumentSnapshot doc = await docRef.GetSnapshotAsync();
+
+            if (doc.Exists)
+            {
+                var user = doc.ConvertTo<UserModel>();
+                // Дополнительная защита на бэкенде от удаления самого себя
+                if (user.Login == User.Identity.Name)
+                {
+                    TempData["ErrorNotification"] = "Вы не можете удалить свой собственный аккаунт.";
+                    return RedirectToAction("UsersList");
+                }
+            }
+
             await docRef.DeleteAsync();
             TempData["SuccessNotification"] = "Пользователь удален.";
             return RedirectToAction("UsersList");
@@ -171,22 +181,36 @@ namespace DocSystemWeb.Controllers
 
             if (!oldDoc.Exists) return RedirectToAction("UsersList");
 
+            var oldUser = oldDoc.ConvertTo<UserModel>();
+            string finalRole = model.Role;
+
+            // БИЗНЕС-ПРАВИЛО: Администратор не должен иметь возможность снимать с себя роль Admin
+            if (oldUser.Login == User.Identity.Name && oldUser.Role == "Admin" && model.Role != "Admin")
+            {
+                finalRole = "Admin"; // Принудительно сохраняем роль Admin
+                TempData["ErrorNotification"] = "Изменения сохранены, но роль принудительно оставлена 'Администратор'.";
+            }
+
             var updates = new Dictionary<string, object>
             {
                 { "Login", model.Login },
                 { "FullName", model.FullName },
                 { "Position", model.Position },
-                { "Role", model.Role }
+                { "Role", finalRole }
             };
 
-            // Если при редактировании указан новый пароль — хэшируем его в поле Password
             if (!string.IsNullOrWhiteSpace(newPassword))
             {
                 updates.Add("Password", _passwordHasher.HashPassword(null, newPassword));
             }
 
             await userRef.UpdateAsync(updates);
-            TempData["SuccessNotification"] = $"Данные пользователя {model.FullName} обновлены.";
+
+            if (TempData["ErrorNotification"] == null)
+            {
+                TempData["SuccessNotification"] = $"Данные пользователя {model.FullName} обновлены.";
+            }
+
             return RedirectToAction("UsersList");
         }
     }

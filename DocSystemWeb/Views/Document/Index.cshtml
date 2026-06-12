@@ -4,6 +4,15 @@
 }
 
 <style>
+    /* Фиксированный размер для бейджей категорий, статусов и действий в журнале безопасности */
+    .doc-category, .doc-status, .log-action {
+        width: 140px; /* Ширина, чтобы влезло "На согласовании" и длинные действия */
+        display: inline-block;
+        text-align: center;
+        padding-top: 0.45em;
+        padding-bottom: 0.45em;
+    }
+
     /* Стили для цветных карточек статистики с эффектом подпрыгивания */
     .stat-card {
         border-radius: 1rem;
@@ -35,6 +44,17 @@
     .bg-gradient-info {
         background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
         color: white;
+    }
+
+    /* Единый стандарт для кнопок действий */
+    .btn-unified {
+        width: 110px !important;
+        height: 34px !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        font-size: 0.85rem;
     }
 </style>
 
@@ -76,99 +96,100 @@
     </button>
 </div>
 
-<form method="get" asp-action="Index" class="row g-2 mb-4 p-3 glass-panel align-items-end fade-in-content">
+<div class="row g-2 mb-4 p-3 glass-panel align-items-end fade-in-content">
     <div class="col-md-4">
         <label class="form-label fw-semibold small mb-1">Поиск</label>
-        <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Название..." />
+        <input type="text" id="liveSearchInput" class="form-control" placeholder="Начните вводить название..." />
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <label class="form-label fw-semibold small mb-1">Категория</label>
-        <select name="searchCategory" class="form-select">
+        <select id="liveCategorySelect" class="form-select">
             <option value="">Все</option>
-            <option value="Приказ" selected="@(ViewBag.SearchCategory == "Приказ")">Приказ</option>
-            <option value="Отчет" selected="@(ViewBag.SearchCategory == "Отчет")">Отчет</option>
-            <option value="Договор" selected="@(ViewBag.SearchCategory == "Договор")">Договор</option>
-            <option value="Справка" selected="@(ViewBag.SearchCategory == "Справка")">Справка</option>
-            <option value="Инструкция" selected="@(ViewBag.SearchCategory == "Инструкция")">Инструкция</option>
+            <option value="Приказ">Приказ</option>
+            <option value="Отчет">Отчет</option>
+            <option value="Договор">Договор</option>
+            <option value="Справка">Справка</option>
+            <option value="Инструкция">Инструкция</option>
         </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <label class="form-label fw-semibold small mb-1">Статус</label>
-        <select name="searchStatus" class="form-select">
+        <select id="liveStatusSelect" class="form-select">
             <option value="">Все</option>
-            <option value="Черновик" selected="@(ViewBag.SearchStatus == "Черновик")">Черновик</option>
-            <option value="На согласовании" selected="@(ViewBag.SearchStatus == "На согласовании")">На согласовании</option>
-            <option value="Утверждено" selected="@(ViewBag.SearchStatus == "Утверждено")">Утверждено</option>
+            <option value="Черновик">Черновик</option>
+            <option value="На согласовании">На согласовании</option>
+            <option value="Утверждено">Утверждено</option>
+            <option value="Отклонено">Отклонено</option>
         </select>
     </div>
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-primary w-100 shadow-sm">Искать</button>
-    </div>
-</form>
+</div>
 
 <div class="card glass-panel p-4 fade-in-content">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0 border-0">
             <thead>
                 <tr>
-                    <th style="width: 35%;" class="border-bottom-0 text-muted">Название и описание</th>
-                    <th style="width: 15%;" class="border-bottom-0 text-muted">Категория</th>
-                    <th style="width: 15%;" class="border-bottom-0 text-muted">Статус</th>
-                    <th style="width: 10%;" class="border-bottom-0 text-muted">Версия</th>
-                    <th style="width: 10%;" class="border-bottom-0 text-muted">Файл</th>
-                    <th style="width: 15%;" class="border-bottom-0 text-muted text-end">Действия</th>
+                    <th style="width: 35%;" class="border-bottom-0 text-muted text-center">Название и описание</th>
+                    <th style="width: 15%;" class="border-bottom-0 text-muted text-center">Категория</th>
+                    <th style="width: 15%;" class="border-bottom-0 text-muted text-center">Статус</th>
+                    <th style="width: 10%;" class="border-bottom-0 text-muted text-center">Версия</th>
+                    <th style="width: 10%;" class="border-bottom-0 text-muted text-center">Файл</th>
+                    <th style="width: 15%;" class="border-bottom-0 text-muted text-center">Действия</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach (var doc in Model)
-                {
-                    <tr>
-                        <td class="align-top">
-                            <strong class="d-block mb-1" style="font-size: 1.1rem;">@doc.Title</strong>
+            <tbody id="docsTableBody">
+            @foreach (var doc in Model)
+            {
+                    <tr class="align-middle">
+                        <td class="text-center" ">
+                        <strong class="d-block mb-1" style="font-size: 1.1rem;">@doc.Title</strong>
 
-                            @if (!string.IsNullOrEmpty(doc.Description))
-                            {
-                                <div class="description-container mb-2">
-                                    <div class="description-text collapsed-text text-muted" style="font-size: 0.9rem; line-height: 1.4;">
-                                        @doc.Description
-                                    </div>
-                                    @if (doc.Description.Length > 80)
-                                    {
-                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2 mt-1 shadow-sm toggle-description-btn" style="font-size: 0.75rem;">
-                                            Развернуть ↓
-                                        </button>
-                                    }
+                        @if (!string.IsNullOrEmpty(doc.Description))
+                        {
+                            <div class="description-container mb-2">
+                                <div class="description-text collapsed-text text-muted" style="font-size: 0.9rem; line-height: 1.4;">
+                                    @doc.Description
                                 </div>
-                            }
-                            <div style="font-size: 0.8rem; color: #adb5bd;">
-                                <span class="fw-semibold">Автор:</span> @doc.OwnerName
+                                @if (doc.Description.Length > 80)
+                                {
+                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0 px-2 mt-1 shadow-sm toggle-description-btn" style="font-size: 0.75rem;">
+                                        Развернуть ↓
+                                    </button>
+                                }
                             </div>
-                        </td>
-                        <td class="align-top"><span class="badge bg-light text-dark border mt-1">@doc.Category</span></td>
-                        <td class="align-top">
-                            <span class="badge mt-1 bg-@(doc.Status == "Утверждено" ? "success" : doc.Status == "На согласовании" ? "warning text-dark" : "secondary")">
-                                @doc.Status
-                            </span>
-                        </td>
-                        <td class="align-top"><span class="badge bg-dark rounded-pill mt-1">v @doc.Version</span></td>
-                        <td class="align-top">
-                            @if (!string.IsNullOrEmpty(doc.FileName))
-                            {
-                                <button class="btn btn-outline-info btn-sm rounded-pill px-3 shadow-sm mt-1" data-bs-toggle="modal" data-bs-target="#previewModal-@doc.Id">Просмотр</button>
-                            }
-                        </td>
-                        <td class="text-end align-top">
-                            @if (User.IsInRole("Admin") || doc.OwnerId == User.Identity.Name)
-                            {
-                                <div class="d-flex flex-column align-items-end mt-1">
-                                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#editModal-@doc.Id">Изменить</button>
-                                    <a asp-action="DeleteDocument" asp-route-id="@doc.Id" class="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm" onclick="return confirm('Удалить документ со всеми версиями?')">Удалить</a>
-                                </div>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
+                        }
+                        <div style="font-size: 0.8rem; color: #adb5bd;">
+                            <span class="fw-semibold">Автор:</span> @doc.OwnerName
+                        </div>
+                    </td>
+                        <td class="text-center" "><span class="badge bg-light text-dark border mt-1 doc-category">@doc.Category</span></td>
+                        <td class="text-center" ">
+                        <span class="badge mt-1 doc-status bg-@(doc.Status == "Утверждено" ? "success" : doc.Status == "Отклонено" ? "danger" : doc.Status == "На согласовании" ? "warning text-dark" : "secondary")">
+                            @doc.Status
+                        </span>
+                    </td>
+                        <td class="text-center"><span class="badge bg-dark rounded-pill mt-1">v @doc.Version</span></td>
+                        <td class="text-center" ">
+                        @if (!string.IsNullOrEmpty(doc.FileName))
+                        {
+                            <button class="btn btn-outline-info btn-unified rounded-pill shadow-sm mt-1" data-bs-toggle="modal" data-bs-target="#previewModal-@doc.Id">Просмотр</button>
+                        }
+                    </td>
+                        <td class="text-center">
+                        @if (User.IsInRole("Admin") || User.IsInRole("Руководитель") || User.IsInRole("Manager") || doc.OwnerId == User.Identity.Name)
+                        {
+                                <div class="d-flex flex-column align-items-center mt-1">
+                                <button class="btn btn-outline-primary btn-unified rounded-pill shadow-sm mb-2" data-bs-toggle="modal" data-bs-target="#editModal-@doc.Id">Изменить</button>
+                                @if (User.IsInRole("Admin") || doc.OwnerId == User.Identity.Name)
+                                {
+                                    <a asp-action="DeleteDocument" asp-route-id="@doc.Id" class="btn btn-outline-danger btn-unified rounded-pill shadow-sm" onclick="return confirm('Удалить документ со всеми версиями?')">Удалить</a>
+                                }
+                            </div>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
         </table>
     </div>
 </div>
@@ -196,7 +217,7 @@
                             <td>@log.Timestamp.ToString("dd.MM.yyyy HH:mm:ss")</td>
                             <td class="fw-bold">@log.UserName</td>
                             <td>
-                                <span class="badge bg-@(log.Action == "Удаление" || log.Action == "Удаление версии" ? "danger" : log.Action == "Редактирование" ? "warning text-dark" : "success")">
+                                <span class="badge log-action bg-@(log.Action == "Удаление" || log.Action == "Удаление версии" ? "danger" : log.Action == "Редактирование" ? "warning text-dark" : "success")">
                                     @log.Action
                                 </span>
                             </td>
@@ -246,7 +267,11 @@
                             <select name="Status" class="form-select">
                                 <option value="Черновик">Черновик</option>
                                 <option value="На согласовании">На согласовании</option>
-                                <option value="Утверждено">Утверждено</option>
+                                @if (User.IsInRole("Admin") || User.IsInRole("Руководитель") || User.IsInRole("Manager"))
+                                {
+                                    <option value="Утверждено">Утверждено</option>
+                                    <option value="Отклонено">Отклонено</option>
+                                }
                             </select>
                         </div>
                     </div>
@@ -292,7 +317,7 @@
         </div>
     }
 
-    @if (User.IsInRole("Admin") || doc.OwnerId == User.Identity.Name)
+    @if (User.IsInRole("Admin") || User.IsInRole("Руководитель") || User.IsInRole("Manager") || doc.OwnerId == User.Identity.Name)
     {
         <div class="modal fade" id="editModal-@doc.Id" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -332,7 +357,22 @@
                                     <select name="Status" class="form-select">
                                         <option value="Черновик" selected="@(doc.Status == "Черновик")">Черновик</option>
                                         <option value="На согласовании" selected="@(doc.Status == "На согласовании")">На согласовании</option>
-                                        <option value="Утверждено" selected="@(doc.Status == "Утверждено")">Утверждено</option>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("Руководитель") || User.IsInRole("Manager"))
+                                        {
+                                            <option value="Утверждено" selected="@(doc.Status == "Утверждено")">Утверждено</option>
+                                            <option value="Отклонено" selected="@(doc.Status == "Отклонено")">Отклонено</option>
+                                        }
+                                        else
+                                        {
+                                            @if (doc.Status == "Утверждено")
+                                            {
+                                                <option value="Утверждено" selected>Утверждено (Только чтение)</option>
+                                            }
+                                            else if (doc.Status == "Отклонено")
+                                            {
+                                                <option value="Отклонено" selected>Отклонено (Только чтение)</option>
+                                            }
+                                        }
                                     </select>
                                 </div>
                                 <div class="col-12 mt-4">
@@ -384,12 +424,51 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const toggleButtons = document.querySelectorAll('.toggle-description-btn');
 
+            // Логика живого поиска
+            const searchInput = document.getElementById('liveSearchInput');
+            const categorySelect = document.getElementById('liveCategorySelect');
+            const statusSelect = document.getElementById('liveStatusSelect');
+            const tableBody = document.getElementById('docsTableBody');
+
+            function filterTable() {
+                if (!tableBody) return;
+
+                const query = searchInput.value.toLowerCase();
+                const category = categorySelect.value;
+                const status = statusSelect.value;
+                const rows = tableBody.querySelectorAll('tr');
+
+                rows.forEach(row => {
+                    const titleEl = row.querySelector('strong');
+                    const categoryEl = row.querySelector('.doc-category');
+                    const statusEl = row.querySelector('.doc-status');
+
+                    const titleText = titleEl ? titleEl.innerText.toLowerCase() : '';
+                    const rowCategory = categoryEl ? categoryEl.innerText.trim() : '';
+                    const rowStatus = statusEl ? statusEl.innerText.trim() : '';
+
+                    const matchesSearch = titleText.includes(query);
+                    const matchesCategory = category === "" || rowCategory === category;
+                    const matchesStatus = status === "" || rowStatus === status;
+
+                    if (matchesSearch && matchesCategory && matchesStatus) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            if (searchInput) searchInput.addEventListener('input', filterTable);
+            if (categorySelect) categorySelect.addEventListener('change', filterTable);
+            if (statusSelect) statusSelect.addEventListener('change', filterTable);
+
+            // Логика кнопки "Развернуть"
+            const toggleButtons = document.querySelectorAll('.toggle-description-btn');
             toggleButtons.forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     const textBlock = this.previousElementSibling;
-
                     if (textBlock.classList.contains('collapsed-text')) {
                         textBlock.classList.remove('collapsed-text');
                         this.innerText = 'Свернуть ↑';
@@ -402,6 +481,7 @@
                 });
             });
 
+            // Логика модального окна предпросмотра
             document.querySelectorAll('.preview-modal').forEach(function(modal) {
                 modal.addEventListener('show.bs.modal', function () {
                     let iframe = modal.querySelector('.preview-frame');
@@ -414,12 +494,10 @@
                     if (viewableExtensions.includes(extension)) {
                         iframe.setAttribute('src', fileUrl);
                         iframe.style.display = 'block';
-
                         noPreviewMsg.classList.add('d-none');
                         noPreviewMsg.classList.remove('d-flex');
                     } else {
                         iframe.style.display = 'none';
-
                         noPreviewMsg.classList.remove('d-none');
                         noPreviewMsg.classList.add('d-flex');
                     }
@@ -427,9 +505,7 @@
 
                 modal.addEventListener('hidden.bs.modal', function () {
                     let iframe = modal.querySelector('.preview-frame');
-                    if (iframe) {
-                        iframe.removeAttribute('src');
-                    }
+                    if (iframe) iframe.removeAttribute('src');
                 });
             });
         });

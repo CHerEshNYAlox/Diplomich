@@ -28,11 +28,22 @@
 
             <div class="mb-3">
                 <label class="form-label fw-bold small text-muted">Уровень прав (Роль)</label>
-                <select asp-for="Role" class="form-select">
-                    <option value="User">Пользователь</option>
-                    <option value="Manager">Руководитель</option>
-                    <option value="Admin">Администратор</option>
-                </select>
+                @if (Model.Login == User.Identity.Name && Model.Role == "Admin")
+                {
+                    <input type="hidden" name="Role" value="Admin" />
+                    <select class="form-select" disabled>
+                        <option value="Admin" selected>Администратор</option>
+                    </select>
+                    <small class="text-danger d-block mt-1">Вы не можете снять с себя полномочия администратора.</small>
+                }
+                else
+                {
+                    <select asp-for="Role" class="form-select">
+                        <option value="User">Пользователь</option>
+                        <option value="Manager">Руководитель</option>
+                        <option value="Admin">Администратор</option>
+                    </select>
+                }
             </div>
 
             <div class="mb-4">
